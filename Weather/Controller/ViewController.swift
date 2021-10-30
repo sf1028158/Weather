@@ -2,7 +2,7 @@
 //  ViewController.swift
 //  Weather
 //
-//  Created by Ashish Ashish on 10/28/21.
+//  Created by Fang Shao on 10/28/21.
 //
 
 import UIKit
@@ -16,7 +16,7 @@ import PromiseKit
 class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSource {
    
     
-    let arr = ["Seattle WA, USA 54 °F", "Delhi DL, India, 75°F"]
+   // let arr = ["Seattle WA, USA 54 °F", "Delhi DL, India, 75°F"]
     var arrCityInfo: [CityInfo] = [CityInfo]()
     var arrCurrentWeather : [CurrentWeather] = [CurrentWeather]()
 
@@ -31,12 +31,27 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     }
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return arr.count // You will replace this with arrCurrentWeather.count
+        return arrCurrentWeather.count // You will replace this with arrCurrentWeather.count
+    
+    
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "cell", for: indexPath)
-        cell.textLabel?.text = arr[indexPath.row] // replace this with values from arrCurrentWeather array
+        //cell.textLabel?.text = arr[indexPath.row] // replace this with values from arrCurrentWeather array
+        let currentWeather = currentWeatherArray[indexPath.row]
+        cell.textLabel?.text="\(currentWeather.cityInfoName)\(currentWeather.temp)℉\(currentWeathe.weatherText)"
+        if(arrCurrentWeather[indexPath.row].weatherText.lowercased().contains("rainny")){
+                    cell.imgWeather.image = UIImage(named: "rainny")
+                }else if(arrCurrentWeather[indexPath.row].weatherText.lowercased().contains("cloudy")){
+                    cell.imgWeather.image = UIImage(named: "cloudy")
+                }else if(arrCurrentWeather[indexPath.row].weatherText.lowercased().contains("snowy")){
+                    cell.imgWeather.image = UIImage(named: "snowy")
+                }else if(arrCurrentWeather[indexPath.row].weatherText.lowercased().contains("windy")){
+                    cell.imgWeather.image = UIImage(named: "windy")
+                }else{
+                    cell.imgWeather.image = UIImage(named: "sunny")
+                }
         return cell
     }
     
@@ -84,7 +99,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     
     func getCurrentWeather(_ cityKey : String) -> Promise<CurrentWeather>{
             return Promise<CurrentWeather> { seal -> Void in
-                let url = "" // build URL for current weather here
+                let url = "\(currentWeatherURL)\(cityKey)?apikey=\(apiKey)"
                 
                 Alamofire.request(url).responseJSON { response in
                     
@@ -92,8 +107,28 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
                         seal.reject(response.error!)
                     }
                     
-                  
+                    let weatherJSON = JSON( response.data!).array
+                    
+                    guard let WeatherInfo = weatherJSON!.first else { seal.fulfill(CurrentWeather())
+                        
+                                            return
+                                        }
                     let currentWeather = CurrentWeather()
+                    
+                    currentWeather.cityInfoName = cityName
+                    currentWeather.cityKey = cityKey
+                    currentWeather.epochTime = WeatherInfo["EpochTime"].intValue
+                    currentWeather.isDayTime = WeatherInfo["IsDayTime"].boolValue
+                    currentWeather.tempMetric = WeatherInfo["Temperature"]["Metric"]["Value"].intValue
+                    currentWeather.tempImperial = WeatherInfo["Temperature"]["Imperial"]["Value"].intValue
+                    currentWeather.weatherText = WeatherInfo["WeatherText"].stringValue
+ 
+                                       
+                    
+                    
+                    
+                  
+                  //  let currentWeather = CurrentWeather()
                     
                     
                     seal.fulfill(currentWeather)
